@@ -1,0 +1,58 @@
+Nome da Salada,Tempo,Modo de Preparo,Legumes,Proteínas,Carboidratos,Requisitos
+Salada Clássica,1,"- Colocar a alface limpa e os tomates cortados na mesa junto com azeite, sal e aceto balsâmico.
+Dica:  Nível Hard
+","ALFACE, TOMATE",,,"ALFACE LIMPA, TOMATE CORTADO"
+Salada Verão,2,"- Misturar a cenoura ralada com o tomate cortado e adicionar azeite e sal.
+- Colocar a alface limpa e a mistura na mesa.
+Dica:  Essa foi difícil
+","ALFACE, TOMATE, CENOURA RALADA",,,"ALFACE LIMPA, TOMATE CORTADO, CENOURA RALADA"
+Salada Colorida,2,"- Misturar a cenoura ralada com o tomate cortado, o repolho limpo cortado fino e adicionar azeite e sal.
+Dica: Uma pimenta do reino pode ser um belo toque
+","TOMATE, CENOURA RALADA",,,"TOMATE CORTADO, CENOURA RALADA, REPOLHO LIMPO CORTADO FINO"
+Salpicão Vegano,3,"- Misture a cenoura ralada com o tomate cortado, o repolho limpo cortado fino, o milho de lata, a ervilha de lata e adicione azeite e sal.
+Dica: Uma cúrcuma pode dar um toque místico!
+","TOMATE, CENOURA RALADA, MILHO EM LATA, ERVILHA EM LATA",,,"TOMATE CORTADO, CENOURA RALADA, LATA DE MILHO, LATA DE ERVILHA, REPOLHO LIMPO CORTADO FINO"
+Salpicão de Frango,3,"- Misture a cenoura ralada com o tomate cortado, o repolho limpo cortado fino, o milho de lata, o peito de frango cozido desfiado e adicione azeite e sal.
+Dica: Um caminho dá um toque oriental. Maionese e batata palha… engordam
+","TOMATE, CENOURA RALADA, MILHO EM LATA",PEITO DE FRANGO DESFIADO,,"TOMATE CORTADO, CENOURA RALADA, LATA DE MILHO, REPOLHO LIMPO CORTADO FINO, PEITO DE FRANGO COZIDO DESFIADO"
+Legumes Grelhados,8,"- Pré-aqueça a frigideira por 3 minutos a fogo baixo e jogue um pouquinho de azeite.
+- Jogue o brócolis cortado limpo, a cenoura cortada em rodelas, o repolho limpo cortado grosso e a abobrinha cortada em rodelas.
+- Cozinhe por 3’ mexendo a frigideira para misturar os ingredientes, apague o fogo e coloque em um bowl grande.
+- Adicione sal e azeite.
+Dica: Uma páprica picante vai deixar tudo mais gostoso!
+","CENOURA CORTADA EM RODELAS, BÓCOLIS CORTADO LIMPO, ABOBRINHA CORTADA EM RODELAS, REPOLHO LIMPO CORTADO GROSSO",,,"CENOURA CORTADA EM RODELAS, BÓCOLIS CORTADO LIMPO, ABOBRINHA CORTADA EM RODELAS, REPOLHO LIMPO CORTADO GROSSO"
+Salada Ana Lia,5,"- Em um bowl grande misture batata cozida, ovos cozidos cortados, vagem cozida e tomate cortado. 
+- Tempere com azeite e sal.
+Dica: Pode trocar a vagem por brócolis.
+",TOMATE,OVOS COZIDOS,BATATA COZIDA,"TOMATE CORTADO, BATATA COZIDA, VAGEM COZIDA"
+Salada Portuga,5,"- Em um bowl grande misture batata cozida, ovos cozidos cortados e tomate cortado. 
+- Tempere com azeite e sal.
+Dica: Pode trocar a vagem por brócolis
+",TOMATE,OVOS COZIDOS,BATATA COZIDA,"TOMATE CORTADO, BATATA COZIDA"
+Maionese,5,"- Em um bowl grande misture a batata cozida e os ovos cozidos cortados
+- Tempere com azeite e sal.
+Dica: Maionese sem maionese é foda…
+",,OVOS COZIDOS,BATATA COZIDA,BATATA COZIDA
+Sada de Grão de Bico,5,"- Em um bowl grande misture grão de bico com tomate cortado pequeno e cenoura ralada. 
+- Tempere com azeite sal e páprica picante.
+Dica: Uma cebola picada beeeeem fininha cai ótimo","TOMATE, CENOURA RALADA, GRÃO DE BICO",,,"TOMATE CORTADO, CENOURA RALADA, GRÃO DE BICO"
+Salada Verde,4,"- Colocar a rúcula limpa e a alface limpa na mesa junto com o azeite e o sal
+Dica: sob nenhuma hipótese subverter a ordem dos passos acima descritos. 
+",ALFACE LIMPA, RÚCULA LIMPA,,,"ALFACE LIMPA, RÚCULA LIMPA"
+Salada Tropical,4,"- Colocar uma camada de alface limpa e rúcula limpa em um bowl grande
+- Adicionar manga ou figos cortados irregularmente.
+- Temperar com azeite e sal.
+Dica: inovou
+",ALFACE LIMPA, RÚCULA LIMPA,,,"ALFACE LIMPA, RÚCULA LIMPA"
+Salda Brasiloche,5,"- Colocar rúcula limpa em um bowl grande
+- Adicionar manga ou figos cortados e nozes cortadas irregularmente.
+- Incluir duas bolinhas de queijo de cabra cortado. 
+- Temperar com azeite e sal.
+Dica: Eu colocaria um mel ai….
+",RÚCULA LIMPA,,QUEIJO DE CABRA,RÚCULA LIMPA
+Puré de Abóbora,2,"- Colocar a vasilha de vidro com Puré de Abobora no microondas por 2 minutos. 
+Dica: não vai ter cãimbra hein?
+",,,PURE DE ABÓBORA,PURE DE ABOBORA
+Puré de Batatas,2,"- Colocar a vasilha de vidro com puré de batata no microondas por 2 minutos. 
+Dica: tecnicamente isso é carboidrato, não salada. Foda-se.
+",,,PURE DE BATATA,PURE DE BATATA
