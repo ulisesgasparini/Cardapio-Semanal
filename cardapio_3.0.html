@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cardápio & Planejamento Familiar</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #f1f5f9;
+      --tag-prot-bg: #fee2e2;
+      --tag-prot-txt: #991b1b;
+      --tag-carb-bg: #fef3c7;
+      --tag-carb-txt: #92400e;
+      --tag-veg-bg: #dcfce7;
+      --tag-veg-txt: #166534;
+      --prereq-bg: #fffbeb;
+      --prereq-border: #fef3c7;
+      --prereq-title: #b45309;
+      --resp-bg: #f3e8ff;
+      --resp-txt: #6b21a8;
+      --resp-border: #d8b4fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-top: 8px;
+    }
+    header h1 { font-size: 1.7rem; color: #0f172a; margin-bottom: 4px; }
+    header p { color: var(--muted); font-size: 0.92rem; }
+
+    /* Aviso de Carregamento de CSV / File Local */
+    .csv-status-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .file-input-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Navegação por Abas */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 5px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: transparent;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Painel de Filtros (Aba 1) */
+    .filter-panel {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 540px) {
+      .filter-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 0.92rem;
+      outline: none;
+      color: var(--text);
+    }
+    select:focus { border-color: var(--primary); }
+
+    /* Múltipla seleção de Legumes */
+    .legumes-section {
+      margin-top: 4px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+    .legumes-section > label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+    .legumes-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .chip-checkbox { display: none; }
+    .chip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .chip-checkbox:checked + .chip-label {
+      background: #166534;
+      color: #ffffff;
+      border-color: #166534;
+      box-shadow: 0 2px 4px rgba(22, 101, 52, 0.2);
+    }
+
+    .btn-reset {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-reset:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* Seções e Cards de Receitas */
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 24px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .recipes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .recipe-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .recipe-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .time-badge {
+      background: #ede9fe;
+      color: #5b21b6;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+    }
+    .tag-prot { background: var(--tag-prot-bg); color: var(--tag-prot-txt); }
+    .tag-carb { background: var(--tag-carb-bg); color: var(--tag-carb-txt); }
+    .tag-veg  { background: var(--tag-veg-bg); color: var(--tag-veg-txt); }
+
+    details {
+      background: var(--accent);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    summary {
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--primary);
+    }
+    .recipe-content {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      color: #334155;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    /* Pré-requisitos */
+    .prereqs-box {
+      margin-top: 12px;
+      background: var(--prereq-bg);
+      border: 1px solid var(--prereq-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .prereqs-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--prereq-title);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .prereqs-list {
+      list-style-type: none;
+      padding-left: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .prereqs-list li {
+      font-size: 0.83rem;
+      color: #78350f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prereqs-list li::before {
+      content: "•";
+      color: var(--prereq-title);
+      font-weight: bold;
+    }
+
+    .empty-state {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+
+    /* ==========================================
+       ESTILOS DA ABA 2: PLANEJAMENTO SEMANAL
+       ========================================== */
+    .planner-header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .action-buttons-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      transition: all 0.15s ease;
+    }
+    .btn-print-menu {
+      background: #0f172a;
+      color: #ffffff;
+    }
+    .btn-print-menu:hover { background: #334155; }
+    
+    .btn-shopping-list {
+      background: #166534;
+      color: #ffffff;
+    }
+    .btn-shopping-list:hover { background: #15803d; }
+
+    .day-planner-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .day-header {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .day-title-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .resp-badge-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--resp-bg);
+      color: var(--resp-txt);
+      border: 1px solid var(--resp-border);
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: none;
+    }
+    
+    .planner-selectors {
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 720px) {
+      .planner-selectors { grid-template-columns: 1fr; }
+    }
+
+    .day-summary-container { margin-top: 14px; }
+    .day-recipe-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .day-recipe-block h4 {
+      font-size: 0.95rem;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-salad {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: #dcfce7;
+      color: #166534;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .badge-main {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    /* Container de Impressão da Lista de Compras */
+    #printShoppingContainer { display: none; }
+
+    /* ==========================================
+       ESTILOS DE IMPRESSÃO (PDF / IMPRESSORA)
+       ========================================== */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        font-size: 10pt;
+      }
+      header, .tabs-nav, #abaConsulta, .planner-selectors, .planner-header-actions, .btn-reset, select, .csv-status-banner {
+        display: none !important;
+      }
+
+      /* MODO 1: IMPRESSÃO DO CARDÁPIO DA SEMANA */
+      body.printing-menu #abaPlanejamento { display: block !important; }
+      body.printing-menu #printShoppingContainer { display: none !important; }
+      body.printing-menu .day-planner-card {
+        page-break-inside: avoid;
+        border: 1px solid #94a3b8 !important;
+        box-shadow: none !important;
+        margin-bottom: 12px !important;
+        padding: 12px !important;
+        background: #ffffff !important;
+      }
+      body.printing-menu .day-header {
+        font-size: 12pt !important;
+        border-bottom: 2px solid #0f172a !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 4px !important;
+      }
+      body.printing-menu .resp-badge-header {
+        display: inline-block !important;
+        border: 1px solid #7e22ce !important;
+        color: #581c87 !important;
+        font-size: 8pt !important;
+        padding: 2px 6px !important;
+      }
+      body.printing-menu .day-recipe-block {
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        padding: 8px !important;
+        margin-top: 6px !important;
+      }
+      body.printing-menu details {
+        background: transparent !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+      body.printing-menu details summary { display: none !important; }
+      body.printing-menu details .recipe-content {
+        display: block !important;
+        border-top: none !important;
+        padding-top: 4px !important;
+        font-size: 9pt !important;
+        color: #1e293b !important;
+      }
+      body.printing-menu .prereqs-box {
+        background: #fffbeb !important;
+        border: 1px solid #fde68a !important;
+        padding: 6px 8px !important;
+        margin-top: 6px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body.printing-menu .prereqs-title {
+        font-size: 8pt !important;
+        margin-bottom: 3px !important;
+      }
+      body.printing-menu .prereqs-list li {
+        font-size: 8.5pt !important;
+        color: #78350f !important;
+      }
+
+      /* MODO 2: IMPRESSÃO DA LISTA DE COMPRAS */
+      body.printing-shopping #abaPlanejamento { display: none !important; }
+      body.printing-shopping #printShoppingContainer { display: block !important; }
+      .shopping-print-title {
+        font-size: 16pt !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        border-bottom: 2px solid #0f172a !important;
+        padding-bottom: 6px !important;
+        margin-bottom: 14px !important;
+      }
+      .shopping-category-block {
+        margin-bottom: 16px !important;
+        page-break-inside: avoid;
+      }
+      .shopping-cat-title {
+        font-size: 11pt !important;
+        font-weight: 700 !important;
+        padding: 4px 8px !important;
+        margin-bottom: 8px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        border-radius: 4px;
+      }
+      .cat-title-veg { background: #dcfce7 !important; color: #166534 !important; }
+      .cat-title-prot { background: #fee2e2 !important; color: #991b1b !important; }
+      .cat-title-carb { background: #fef3c7 !important; color: #92400e !important; }
+      
+      .shopping-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 10px !important;
+      }
+      .shopping-table th, .shopping-table td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 10px !important;
+        font-size: 9pt !important;
+      }
+      .shopping-table th {
+        background: #f8fafc !important;
+        font-weight: 700 !important;
+        text-align: left !important;
+      }
+      .shopping-check-box {
+        width: 14px;
+        height: 14px;
+        border: 1px solid #64748b;
+        display: inline-block;
+        margin-right: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🍽️ Cardápio & Jantares da Família</h1>
+    <p>Consulte combinações de receitas ou planeje os jantares e compras da semana</p>
+  </header>
+
+  <!-- Banner de Status do CSV -->
+  <div class="csv-status-banner" id="csvBanner">
+    <span id="csvStatusText">🔄 Carregando <strong>pratos.csv</strong>...</span>
+    <div class="file-input-wrapper">
+      <label for="csvFileInput" style="font-size:0.8rem; font-weight:700; cursor:pointer; text-decoration:underline;">Recarregar / Selecionar CSV</label>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="carregarCSVManual(event)">
+    </div>
+  </div>
+
+  <!-- Abas de Navegação -->
+  <nav class="tabs-nav">
+    <button class="tab-btn active" onclick="trocarAba('abaConsulta')">🔍 Consultar Receitas</button>
+    <button class="tab-btn" onclick="trocarAba('abaPlanejamento')">📅 Planejamento da Semana</button>
+  </nav>
+
+  <!-- ==========================================
+       ABA 1: CONSULTA DE RECEITAS
+       ========================================== -->
+  <section id="abaConsulta" class="tab-content active">
+    <div class="filter-panel">
+      <div class="filter-grid">
+        <div class="form-group">
+          <label for="filtroProteina">🥩 Proteína</label>
+          <select id="filtroProteina" onchange="filtrarTudo()">
+            <option value="">Todas as opções</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="filtroCarboidrato">🍚 Carboidrato</label>
+          <select id="filtroCarboidrato" onchange="filtrarTudo()">
+            <option value="">Todas as opções</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="legumes-section">
+        <label>🥦 Legumes / Vegetais (Selecione 1 ou mais):</label>
+        <div class="legumes-chips" id="containerLegumes"></div>
+      </div>
+
+      <button class="btn-reset" onclick="limparFiltros()">Limpar Seleções</button>
+    </div>
+
+    <h2 class="section-title">🥘 Pratos Principais</h2>
+    <main class="recipes-list" id="listaPrincipais"></main>
+
+    <h2 class="section-title">🥗 Saladas & Acompanhamentos</h2>
+    <main class="recipes-list" id="listaSaladas"></main>
+  </section>
+
+  <!-- ==========================================
+       ABA 2: PLANEJAMENTO DOS 5 DIAS ÚTEIS
+       ========================================== -->
+  <section id="abaPlanejamento" class="tab-content">
+    <div class="planner-header-actions">
+      <div>
+        <h2 style="font-size: 1.3rem; color: #0f172a;">Semana dos Jantares</h2>
+        <p style="color: var(--muted); font-size: 0.88rem;">Defina o cardápio, saladas e o chef responsável de cada dia</p>
+      </div>
+      <div class="action-buttons-group">
+        <button class="btn-action btn-shopping-list" onclick="gerarListaComprasPDF()">
+          🛒 Lista de Compras (PDF)
+        </button>
+        <button class="btn-action btn-print-menu" onclick="executarImpressaoCardapio()">
+          🖨️ Imprimir Cardápio (PDF)
+        </button>
+      </div>
+    </div>
+
+    <div id="containerDiasSemana"></div>
+  </section>
+
+  <!-- Elemento invisível que renderiza a Lista de Compras na Impressão -->
+  <div id="printShoppingContainer"></div>
+
+  <script>
+    // Responsáveis fixos
+    const responsaveis = ["Ulises", "Paula", "Maitê"];
+
+    const diasUteis = [
+      { key: "seg", nome: "Segunda-feira", icone: "🌙" },
+      { key: "ter", nome: "Terça-feira", icone: "🌿" },
+      { key: "qua", nome: "Quarta-feira", icone: "🍲" },
+      { key: "qui", nome: "Quinta-feira", icone: "✨" },
+      { key: "sex", nome: "Sexta-feira", icone: "🎉" }
+    ];
+
+    // Arrays dinâmicos populados pelo CSV
+    let pratosPrincipais = [];
+    let saladas = [];
+
+    // ==========================================
+    // PARSER ROBUSTO DE CSV EM JAVASCRIPT
+    // ==========================================
+    function parseCSV(text) {
+      const lines = [];
+      let row = [""];
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        const next = text[i + 1];
+
+        if (c === '"') {
+          if (inQuotes && next === '"') {
+            row[row.length - 1] += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if ((c === ',' || c === ';') && !inQuotes) {
+          row.push("");
+        } else if ((c === '\r' || c === '\n') && !inQuotes) {
+          if (c === '\r' && next === '\n') i++;
+          if (row.length > 1 || row[0] !== "") {
+            lines.push(row);
+          }
+          row = [""];
+        } else {
+          row[row.length - 1] += c;
+        }
+      }
+      if (row.length > 1 || row[0] !== "") {
+        lines.push(row);
+      }
+      return lines;
+    }
+
+    function normalizarChave(str) {
+      return str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+    }
+
+    function processarDadosCSV(csvText) {
+      const matriz = parseCSV(csvText);
+      if (matriz.length < 2) return false;
+
+      const headers = matriz[0].map(h => normalizarChave(h));
+
+      const idxTipo = headers.findIndex(h => h.includes("tipo") || h.includes("categoria"));
+      const idxNome = headers.findIndex(h => h.includes("nome do prato") || h.includes("nome"));
+      const idxTempo = headers.findIndex(h => h.includes("tempo"));
+      const idxReceita = headers.findIndex(h => h.includes("receita") || h.includes("preparo"));
+      const idxLegumes = headers.findIndex(h => h.includes("legume") || h.includes("vegeta"));
+      const idxProt = headers.findIndex(h => h.includes("proteina"));
+      const idxCarb = headers.findIndex(h => h.includes("carboidrato"));
+      const idxReq = headers.findIndex(h => h.includes("requisito") || h.includes("pre-requisito"));
+
+      pratosPrincipais = [];
+      saladas = [];
+
+      for (let i = 1; i < matriz.length; i++) {
+        const row = matriz[i];
+        if (!row || row.length <= idxNome || !row[idxNome].trim()) continue;
+
+        const nome = row[idxNome].trim();
+        const tipo = idxTipo !== -1 && row[idxTipo] ? row[idxTipo].trim().toLowerCase() : "";
+        const tempo = idxTempo !== -1 && row[idxTempo] ? row[idxTempo].trim() : "20 min";
+        const preparo = idxReceita !== -1 && row[idxReceita] ? row[idxReceita].trim() : "Modo de preparo não informado.";
+        const proteina = idxProt !== -1 && row[idxProt] ? row[idxProt].trim() : "Outros";
+        const carboidrato = idxCarb !== -1 && row[idxCarb] ? row[idxCarb].trim() : "Outros";
+
+        // Divide legumes por vírgula ou ponto e vírgula
+        let legumes = [];
+        if (idxLegumes !== -1 && row[idxLegumes]) {
+          legumes = row[idxLegumes].split(/[,;]/).map(l => l.trim()).filter(l => l.length > 0);
+        }
+
+        // Divide pré-requisitos por ponto e vírgula ou ponto final
+        let prerequisitos = [];
+        if (idxReq !== -1 && row[idxReq]) {
+          prerequisitos = row[idxReq].split(/[;•]/).map(r => r.trim()).filter(r => r.length > 0);
+          if (prerequisitos.length === 0 && row[idxReq].trim()) {
+            prerequisitos = [row[idxReq].trim()];
+          }
+        }
+
+        const itemObj = {
+          id: `item_${i}`,
+          nome: nome,
+          tempo: tempo,
+          preparo: preparo,
+          proteina: proteina,
+          carboidrato: carboidrato,
+          legumes: legumes,
+          prerequisitos: prerequisitos
+        };
+
+        // Identifica se é Salada ou Principal
+        if (tipo.includes("salada") || nome.toLowerCase().includes("salada") || tipo.includes("acompanhamento")) {
+          saladas.push(itemObj);
+        } else {
+          pratosPrincipais.push(itemObj);
+        }
+      }
+
+      return true;
+    }
+
+    // Carregamento automático de pratos.csv (via Fetch)
+    async function carregarCSVAutomatico() {
+      const statusText = document.getElementById("csvStatusText");
+      try {
+        const response = await fetch("pratos.csv?v=" + Date.now());
+        if (!response.ok) throw new Error("Arquivo pratos.csv não encontrado no mesmo diretório.");
+        const text = await response.text();
+        if (processarDadosCSV(text)) {
+          statusText.innerHTML = `✅ <strong>pratos.csv</strong> carregado com sucesso! (${pratosPrincipais.length} principais, ${saladas.length} saladas)`;
+          atualizarInterfaceCompleta();
+        } else {
+          throw new Error("Formato do CSV inválido.");
+        }
+      } catch (err) {
+        statusText.innerHTML = `⚠️ <strong>pratos.csv</strong>: carregamento automático restrito pelo navegador (Protocolo local <code>file://</code>). Use o botão ao lado para carregar o arquivo ou rode via servidor local.`;
+      }
+    }
+
+    // Carregamento manual por input se o navegador bloquear fetch local
+    function carregarCSVManual(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        if (processarDadosCSV(text)) {
+          document.getElementById("csvStatusText").innerHTML = `✅ <strong>${file.name}</strong> carregado com sucesso! (${pratosPrincipais.length} principais, ${saladas.length} saladas)`;
+          atualizarInterfaceCompleta();
+        } else {
+          alert("Não foi possível ler as receitas deste arquivo CSV. Verifique o cabeçalho.");
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function atualizarInterfaceCompleta() {
+      popularFiltros();
+      filtrarTudo();
+      montarPlanejadorSemanal();
+    }
+
+    // ==========================================
+    // CONTROLE DE NAVEGAÇÃO DE ABAS
+    // ==========================================
+    function trocarAba(abaId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      
+      document.getElementById(abaId).classList.add("active");
+      
+      if (abaId === 'abaConsulta') {
+        document.querySelectorAll(".tab-btn")[0].classList.add("active");
+      } else {
+        document.querySelectorAll(".tab-btn")[1].classList.add("active");
+      }
+    }
+
+    // ==========================================
+    // LÓGICA DA ABA 1: FILTROS & CONSULTA
+    // ==========================================
+    const selectProt = document.getElementById("filtroProteina");
+    const selectCarb = document.getElementById("filtroCarboidrato");
+    const containerLegumes = document.getElementById("containerLegumes");
+    const containerPrincipais = document.getElementById("listaPrincipais");
+    const containerSaladas = document.getElementById("listaSaladas");
+
+    function popularFiltros() {
+      const todosOsPratos = [...pratosPrincipais, ...saladas];
+
+      selectProt.innerHTML = '<option value="">Todas as opções</option>';
+      selectCarb.innerHTML = '<option value="">Todas as opções</option>';
+
+      const proteinas = [...new Set(todosOsPratos.map(r => r.proteina))].filter(Boolean).sort();
+      const carboidratos = [...new Set(todosOsPratos.map(r => r.carboidrato))].filter(Boolean).sort();
+
+      proteinas.forEach(p => selectProt.innerHTML += `<option value="${p}">${p}</option>`);
+      carboidratos.forEach(c => selectCarb.innerHTML += `<option value="${c}">${c}</option>`);
+
+      const todosLegumes = new Set();
+      todosOsPratos.forEach(p => {
+        if (Array.isArray(p.legumes)) {
+          p.legumes.forEach(leg => todosLegumes.add(leg));
+        }
+      });
+
+      const legumesOrdenados = [...todosLegumes].filter(Boolean).sort();
+      containerLegumes.innerHTML = "";
+
+      legumesOrdenados.forEach((leg, index) => {
+        const id = `leg_${index}`;
+        containerLegumes.innerHTML += `
+          <input type="checkbox" id="${id}" value="${leg}" class="chip-checkbox" onchange="filtrarTudo()">
+          <label for="${id}" class="chip-label">${leg}</label>
+        `;
+      });
+    }
+
+    function gerarCardHtml(r) {
+      const tagsLegumes = (r.legumes || []).map(leg => `<span class="tag tag-veg">🥦 ${leg}</span>`).join(" ");
+
+      let prereqsHtml = "";
+      if (r.prerequisitos && r.prerequisitos.length > 0) {
+        const itens = r.prerequisitos.map(item => `<li>${item}</li>`).join("");
+        prereqsHtml = `
+          <div class="prereqs-box">
+            <div class="prereqs-title">📌 Pré-requisitos & Organização Prévia:</div>
+            <ul class="prereqs-list">${itens}</ul>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="recipe-card">
+          <div class="recipe-header">
+            <span class="recipe-title">${r.nome}</span>
+            <span class="time-badge">⏱️ ${r.tempo}</span>
+          </div>
+          <div class="tags">
+            <span class="tag tag-prot">🥩 ${r.proteina}</span>
+            <span class="tag tag-carb">🍚 ${r.carboidrato}</span>
+            ${tagsLegumes}
+          </div>
+          <details>
+            <summary>Ver modo de preparo</summary>
+            <div class="recipe-content">
+              <p>${r.preparo}</p>
+            </div>
+          </details>
+          ${prereqsHtml}
+        </div>
+      `;
+    }
+
+    function renderizarCards(lista, container, tipoVazio) {
+      container.innerHTML = "";
+      if (lista.length === 0) {
+        container.innerHTML = `<div class="empty-state">Nenhuma opção de ${tipoVazio} encontrada.</div>`;
+        return;
+      }
+      container.innerHTML = lista.map(r => gerarCardHtml(r)).join("");
+    }
+
+    function obterLegumesSelecionados() {
+      const checkboxes = document.querySelectorAll(".chip-checkbox:checked");
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function aplicarFiltro(base) {
+      const pSel = selectProt.value;
+      const cSel = selectCarb.value;
+      const legumesSelecionados = obterLegumesSelecionados();
+
+      return base.filter(r => {
+        const matchProt = !pSel || r.proteina === pSel;
+        const matchCarb = !cSel || r.carboidrato === cSel;
+        const matchLegume = legumesSelecionados.length === 0 || 
+          (r.legumes && r.legumes.some(leg => legumesSelecionados.includes(leg)));
+        return matchProt && matchCarb && matchLegume;
+      });
+    }
+
+    function filtrarTudo() {
+      renderizarCards(aplicarFiltro(pratosPrincipais), containerPrincipais, "prato principal");
+      renderizarCards(aplicarFiltro(saladas), containerSaladas, "salada");
+    }
+
+    function limparFiltros() {
+      selectProt.value = "";
+      selectCarb.value = "";
+      document.querySelectorAll(".chip-checkbox").forEach(cb => cb.checked = false);
+      filtrarTudo();
+    }
+
+    // ==========================================
+    // LÓGICA DA ABA 2: PLANEJAMENTO SEMANAL
+    // ==========================================
+    const containerDiasSemana = document.getElementById("containerDiasSemana");
+
+    function montarPlanejadorSemanal() {
+      containerDiasSemana.innerHTML = "";
+
+      const optionsPrincipais = pratosPrincipais.map(p => `<option value="${p.id}">${p.nome}</option>`).join("");
+      const optionsSaladas = saladas.map(s => `<option value="${s.id}">${s.nome}</option>`).join("");
+      const optionsResp = responsaveis.map(resp => `<option value="${resp}">${resp}</option>`).join("");
+
+      diasUteis.forEach(dia => {
+        const cardDia = document.createElement("div");
+        cardDia.className = "day-planner-card";
+        cardDia.innerHTML = `
+          <div class="day-header">
+            <div class="day-title-text">${dia.icone} ${dia.nome}</div>
+            <div class="resp-badge-header" id="badge_resp_${dia.key}"></div>
+          </div>
+          <div class="planner-selectors">
+            <div class="form-group">
+              <label for="sel_main_${dia.key}">🥘 Prato Principal <span style="color:#dc2626">*</span></label>
+              <select id="sel_main_${dia.key}" onchange="atualizarResumoDia('${dia.key}')">
+                <option value="">Selecione o Prato...</option>
+                ${optionsPrincipais}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sel_salad_${dia.key}">🥗 Salada <span style="font-weight:normal; color:#64748b">(opcional)</span></label>
+              <select id="sel_salad_${dia.key}" onchange="atualizarResumoDia('${dia.key}')">
+                <option value="">Nenhuma salada</option>
+                ${optionsSaladas}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sel_resp_${dia.key}">👤 Responsável</label>
+              <select id="sel_resp_${dia.key}" onchange="atualizarResumoDia('${dia.key}')">
+                <option value="">A definir...</option>
+                ${optionsResp}
+              </select>
+            </div>
+          </div>
+          <div class="day-summary-container" id="summary_${dia.key}"></div>
+        `;
+        containerDiasSemana.appendChild(cardDia);
+      });
+    }
+
+    function atualizarResumoDia(diaKey) {
+      const selectMain = document.getElementById(`sel_main_${diaKey}`);
+      const selectSalad = document.getElementById(`sel_salad_${diaKey}`);
+      const selectResp = document.getElementById(`sel_resp_${diaKey}`);
+      const badgeResp = document.getElementById(`badge_resp_${diaKey}`);
+      const summaryContainer = document.getElementById(`summary_${diaKey}`);
+
+      const pratoId = selectMain.value;
+      const saladaId = selectSalad.value;
+      const respNome = selectResp.value;
+
+      // Atualiza Badge do Responsável
+      if (respNome) {
+        badgeResp.textContent = `Chef: ${respNome}`;
+        badgeResp.style.display = "inline-block";
+      } else {
+        badgeResp.textContent = "";
+        badgeResp.style.display = "none";
+      }
+
+      summaryContainer.innerHTML = "";
+      if (!pratoId && !saladaId) return;
+
+      let htmlResult = "";
+
+      // Prato Principal
+      if (pratoId) {
+        const pratoObj = pratosPrincipais.find(p => p.id === pratoId);
+        if (pratoObj) {
+          htmlResult += `
+            <div class="day-recipe-block">
+              <h4><span class="badge-main">PRATO PRINCIPAL</span> ${pratoObj.nome} (⏱️ ${pratoObj.tempo})</h4>
+              <details style="margin-top: 8px;">
+                <summary>Ver modo de preparo</summary>
+                <div class="recipe-content"><p>${pratoObj.preparo}</p></div>
+              </details>
+              ${gerarPrereqsBlock(pratoObj.prerequisitos)}
+            </div>
+          `;
+        }
+      }
+
+      // Salada
+      if (saladaId) {
+        const saladaObj = saladas.find(s => s.id === saladaId);
+        if (saladaObj) {
+          htmlResult += `
+            <div class="day-recipe-block" style="border-left: 3px solid #16a34a;">
+              <h4><span class="badge-salad">SALADA</span> ${saladaObj.nome} (⏱️ ${saladaObj.tempo})</h4>
+              <details style="margin-top: 8px;">
+                <summary>Ver modo de preparo</summary>
+                <div class="recipe-content"><p>${saladaObj.preparo}</p></div>
+              </details>
+              ${gerarPrereqsBlock(saladaObj.prerequisitos)}
+            </div>
+          `;
+        }
+      }
+
+      summaryContainer.innerHTML = htmlResult;
+    }
+
+    function gerarPrereqsBlock(prereqs) {
+      if (!prereqs || prereqs.length === 0) return "";
+      const itens = prereqs.map(i => `<li>${i}</li>`).join("");
+      return `
+        <div class="prereqs-box">
+          <div class="prereqs-title">📌 Pré-requisitos & Organização:</div>
+          <ul class="prereqs-list">${itens}</ul>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // FUNÇÕES DE IMPRESSÃO / GERAÇÃO DE PDF
+    // ==========================================
+    function executarImpressaoCardapio() {
+      document.body.className = "printing-menu";
+      document.querySelectorAll("#abaPlanejamento details").forEach(d => d.setAttribute("open", "true"));
+      window.print();
+    }
+
+    function gerarListaComprasPDF() {
+      const contagemLegumes = {};
+      const contagemProteinas = {};
+      const contagemCarboidratos = {};
+      let totalPratosSelecionados = 0;
+
+      diasUteis.forEach(dia => {
+        const mainVal = document.getElementById(`sel_main_${dia.key}`).value;
+        const saladVal = document.getElementById(`sel_salad_${dia.key}`).value;
+
+        const itensDia = [];
+        if (mainVal) {
+          const p = pratosPrincipais.find(x => x.id === mainVal);
+          if (p) { itensDia.push(p); totalPratosSelecionados++; }
+        }
+        if (saladVal) {
+          const s = saladas.find(x => x.id === saladVal);
+          if (s) { itensDia.push(s); totalPratosSelecionados++; }
+        }
+
+        const legumesDoDia = new Set();
+        const proteinasDoDia = new Set();
+        const carboidratosDoDia = new Set();
+
+        itensDia.forEach(item => {
+          if (item.proteina) proteinasDoDia.add(item.proteina);
+          if (item.carboidrato) carboidratosDoDia.add(item.carboidrato);
+          if (Array.isArray(item.legumes)) {
+            item.legumes.forEach(l => legumesDoDia.add(l));
+          }
+        });
+
+        legumesDoDia.forEach(l => contagemLegumes[l] = (contagemLegumes[l] || 0) + 1);
+        proteinasDoDia.forEach(p => contagemProteinas[p] = (contagemProteinas[p] || 0) + 1);
+        carboidratosDoDia.forEach(c => contagemCarboidratos[c] = (contagemCarboidratos[c] || 0) + 1);
+      });
+
+      if (totalPratosSelecionados === 0) {
+        alert("Selecione os pratos da semana antes de gerar a lista de compras!");
+        return;
+      }
+
+      function gerarLinhasTabela(objContagem) {
+        const chaves = Object.keys(objContagem).sort();
+        if (chaves.length === 0) {
+          return `<tr><td colspan="2" style="color:#64748b; font-style:italic;">Nenhum item nesta categoria</td></tr>`;
+        }
+        return chaves.map(item => {
+          const dias = objContagem[item];
+          const textoDias = dias === 1 ? "1 dia" : `${dias} dias`;
+          return `
+            <tr>
+              <td><span class="shopping-check-box"></span> <strong>${item}</strong></td>
+              <td style="width: 140px; text-align: center; color: #334155; font-weight: 600;">${textoDias}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      const container = document.getElementById("printShoppingContainer");
+      container.innerHTML = `
+        <div class="shopping-print-title">🛒 Lista de Compras da Semana (Jantares)</div>
+        <p style="font-size: 8.5pt; color: #64748b; margin-bottom: 14px;">
+          Ingredientes agregados dos 5 dias úteis com o total de dias de utilização em receitas.
+        </p>
+
+        <div class="shopping-category-block">
+          <div class="shopping-cat-title cat-title-veg">🥦 Legumes & Vegetais</div>
+          <table class="shopping-table">
+            <thead>
+              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
+            </thead>
+            <tbody>
+              ${gerarLinhasTabela(contagemLegumes)}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="shopping-category-block">
+          <div class="shopping-cat-title cat-title-prot">🥩 Proteínas</div>
+          <table class="shopping-table">
+            <thead>
+              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
+            </thead>
+            <tbody>
+              ${gerarLinhasTabela(contagemProteinas)}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="shopping-category-block">
+          <div class="shopping-cat-title cat-title-carb">🍚 Carboidratos & Acompanhamentos</div>
+          <table class="shopping-table">
+            <thead>
+              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
+            </thead>
+            <tbody>
+              ${gerarLinhasTabela(contagemCarboidratos)}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      document.body.className = "printing-shopping";
+      window.print();
+    }
+
+    // Inicialização ao carregar a página
+    window.addEventListener("DOMContentLoaded", carregarCSVAutomatico);
+  </script>
+</body>
+</html>
