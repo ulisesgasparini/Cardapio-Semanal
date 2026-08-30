@@ -733,15 +733,15 @@
 
       const headers = linhas[0].map(h => h.trim().toLowerCase());
       
-      // Mapeamento tolerante de colunas
+      // Mapeamento tolerante de colunas - CORRIGIDO
       const idxTipo = headers.findIndex(h => h.includes("tipo"));
       const idxNome = headers.findIndex(h => h.includes("nome do prato") || h.includes("nome") || h.includes("prato"));
-      const idxTempo = headers.findIndex(h => h.includes("tempo"));
-      const idxReceita = headers.findIndex(h => h.includes("receita") || h.includes("preparo"));
+      const idxTempo = headers.findIndex(h => h.includes("tempo") || h.includes("preparo") && h.includes("tempo"));
+      const idxReceita = headers.findIndex(h => h.includes("receita") && !h.includes("tempo") || h.includes("modo de preparo") || h.includes("modo"));
       const idxLegumes = headers.findIndex(h => h.includes("legume"));
       const idxProteinas = headers.findIndex(h => h.includes("prote"));
       const idxCarboidratos = headers.findIndex(h => h.includes("carbo"));
-      const idxRequisitos = headers.findIndex(h => h.includes("requisito"));
+      const idxRequisitos = headers.findIndex(h => h.includes("requisito") || h.includes("pre-requisito"));
 
       pratosPrincipais = [];
       saladas = [];
@@ -751,8 +751,10 @@
         if (row.length === 0 || !row[idxNome]) continue;
 
         const nome = row[idxNome] || "Sem Nome";
-        const tempo = idxTempo >= 0 ? (row[idxTempo] || "30 min") : "30 min";
-        const preparo = idxReceita >= 0 ? (row[idxReceita] || "") : "";
+        // Extrai apenas o tempo, sem confundir com receita
+        const tempo = idxTempo >= 0 && row[idxTempo] ? (row[idxTempo]) : "30 min";
+        // Receita vem de uma coluna diferente
+        const preparo = idxReceita >= 0 && row[idxReceita] ? (row[idxReceita]) : "";
         const proteina = idxProteinas >= 0 ? (row[idxProteinas] || "N/A") : "N/A";
         const carboidrato = idxCarboidratos >= 0 ? (row[idxCarboidratos] || "N/A") : "N/A";
         
@@ -1000,206 +1002,151 @@
               </select>
             </div>
           </div>
-          <div class="day-summary-container" id="summary_${dia.key}"></div>
+          <div class="day-summary-container" id="resumo_${dia.key}"></div>
         `;
         containerDiasSemana.appendChild(cardDia);
       });
     }
 
     function atualizarResumoDia(diaKey) {
-      const selectMain = document.getElementById(`sel_main_${diaKey}`);
-      const selectSalad = document.getElementById(`sel_salad_${diaKey}`);
-      const selectResp = document.getElementById(`sel_resp_${diaKey}`);
+      const selMain = document.getElementById(`sel_main_${diaKey}`);
+      const selSalad = document.getElementById(`sel_salad_${diaKey}`);
+      const selResp = document.getElementById(`sel_resp_${diaKey}`);
+      const resumoContainer = document.getElementById(`resumo_${diaKey}`);
       const badgeResp = document.getElementById(`badge_resp_${diaKey}`);
-      const summaryContainer = document.getElementById(`summary_${diaKey}`);
 
-      const pratoId = selectMain ? selectMain.value : "";
-      const saladaId = selectSalad ? selectSalad.value : "";
-      const respNome = selectResp ? selectResp.value : "";
+      const mainId = selMain.value;
+      const saladId = selSalad.value;
+      const resp = selResp.value;
 
-      if (badgeResp) {
-        if (respNome) {
-          badgeResp.textContent = `Chef: ${respNome}`;
-          badgeResp.style.display = "inline-block";
-        } else {
-          badgeResp.textContent = "";
-          badgeResp.style.display = "none";
+      resumoContainer.innerHTML = "";
+      badgeResp.innerHTML = "";
+
+      if (mainId || saladId) {
+        if (mainId) {
+          const main = pratosPrincipais.find(p => p.id === mainId);
+          if (main) {
+            resumoContainer.innerHTML += `
+              <div class="day-recipe-block">
+                <h4>${main.nome} <span class="badge-main">🥘 Principal</span></h4>
+                <p style="font-size:0.85rem; margin:0; color:#475569;">${main.preparo || "Sem descrição"}</p>
+              </div>
+            `;
+          }
+        }
+        if (saladId) {
+          const salad = saladas.find(s => s.id === saladId);
+          if (salad) {
+            resumoContainer.innerHTML += `
+              <div class="day-recipe-block">
+                <h4>${salad.nome} <span class="badge-salad">🥗 Salada</span></h4>
+                <p style="font-size:0.85rem; margin:0; color:#475569;">${salad.preparo || "Sem descrição"}</p>
+              </div>
+            `;
+          }
         }
       }
 
-      if (!summaryContainer) return;
-      summaryContainer.innerHTML = "";
-
-      if (!pratoId && !saladaId) return;
-
-      let htmlResult = "";
-
-      if (pratoId) {
-        const pratoObj = pratosPrincipais.find(p => p.id === pratoId);
-        if (pratoObj) {
-          htmlResult += `
-            <div class="day-recipe-block">
-              <h4><span class="badge-main">PRATO PRINCIPAL</span> ${pratoObj.nome} (⏱️ ${pratoObj.tempo})</h4>
-              <details style="margin-top: 8px;">
-                <summary>Ver modo de preparo</summary>
-                <div class="recipe-content"><p>${pratoObj.preparo}</p></div>
-              </details>
-              ${gerarPrereqsBlock(pratoObj.prerequisitos)}
-            </div>
-          `;
-        }
+      if (resp) {
+        badgeResp.innerHTML = `👤 ${resp}`;
+        badgeResp.style.display = "inline-block";
       }
-
-      if (saladaId) {
-        const saladaObj = saladas.find(s => s.id === saladaId);
-        if (saladaObj) {
-          htmlResult += `
-            <div class="day-recipe-block" style="border-left: 3px solid #16a34a;">
-              <h4><span class="badge-salad">SALADA</span> ${saladaObj.nome} (⏱️ ${saladaObj.tempo})</h4>
-              <details style="margin-top: 8px;">
-                <summary>Ver modo de preparo</summary>
-                <div class="recipe-content"><p>${saladaObj.preparo}</p></div>
-              </details>
-              ${gerarPrereqsBlock(saladaObj.prerequisitos)}
-            </div>
-          `;
-        }
-      }
-
-      summaryContainer.innerHTML = htmlResult;
-    }
-
-    function gerarPrereqsBlock(prereqs) {
-      if (!prereqs || prereqs.length === 0) return "";
-      const itens = prereqs.map(i => `<li>${i}</li>`).join("");
-      return `
-        <div class="prereqs-box">
-          <div class="prereqs-title">📌 Pré-requisitos & Organização:</div>
-          <ul class="prereqs-list">${itens}</ul>
-        </div>
-      `;
-    }
-
-    // ==========================================
-    // FUNÇÕES DE IMPRESSÃO / GERAÇÃO DE PDF
-    // ==========================================
-    function executarImpressaoCardapio() {
-      document.body.className = "printing-menu";
-      document.querySelectorAll("#abaPlanejamento details").forEach(d => d.setAttribute("open", "true"));
-      window.print();
     }
 
     function gerarListaComprasPDF() {
-      const contagemLegumes = {};
-      const contagemProteinas = {};
-      const contagemCarboidratos = {};
-      let totalPratosSelecionados = 0;
-
+      const planosJSON = {};
       diasUteis.forEach(dia => {
-        const selM = document.getElementById(`sel_main_${dia.key}`);
-        const selS = document.getElementById(`sel_salad_${dia.key}`);
-        const mainVal = selM ? selM.value : "";
-        const saladVal = selS ? selS.value : "";
-
-        const itensDia = [];
-        if (mainVal) {
-          const p = pratosPrincipais.find(x => x.id === mainVal);
-          if (p) { itensDia.push(p); totalPratosSelecionados++; }
-        }
-        if (saladVal) {
-          const s = saladas.find(x => x.id === saladVal);
-          if (s) { itensDia.push(s); totalPratosSelecionados++; }
-        }
-
-        const legumesDoDia = new Set();
-        const proteinasDoDia = new Set();
-        const carboidratosDoDia = new Set();
-
-        itensDia.forEach(item => {
-          if (item.proteina && item.proteina !== "N/A") proteinasDoDia.add(item.proteina);
-          if (item.carboidrato && item.carboidrato !== "N/A") carboidratosDoDia.add(item.carboidrato);
-          if (Array.isArray(item.legumes)) {
-            item.legumes.forEach(l => { if(l) legumesDoDia.add(l); });
-          }
-        });
-
-        legumesDoDia.forEach(l => contagemLegumes[l] = (contagemLegumes[l] || 0) + 1);
-        proteinasDoDia.forEach(p => contagemProteinas[p] = (contagemProteinas[p] || 0) + 1);
-        carboidratosDoDia.forEach(c => contagemCarboidratos[c] = (contagemCarboidratos[c] || 0) + 1);
+        const mainId = document.getElementById(`sel_main_${dia.key}`).value;
+        const saladId = document.getElementById(`sel_salad_${dia.key}`).value;
+        planosJSON[dia.key] = { mainId, saladId };
       });
 
-      if (totalPratosSelecionados === 0) {
-        alert("Selecione os pratos da semana antes de gerar a lista de compras!");
-        return;
-      }
-
-      function gerarLinhasTabela(objContagem) {
-        const chaves = Object.keys(objContagem).sort();
-        if (chaves.length === 0) {
-          return `<tr><td colspan="2" style="color:#64748b; font-style:italic;">Nenhum item nesta categoria</td></tr>`;
+      const pratos = {};
+      Object.values(planosJSON).forEach(plan => {
+        if (plan.mainId) {
+          const prato = pratosPrincipais.find(p => p.id === plan.mainId);
+          if (prato) pratos[prato.nome] = prato;
         }
-        return chaves.map(item => {
-          const dias = objContagem[item];
-          const textoDias = dias === 1 ? "1 dia" : `${dias} dias`;
-          return `
-            <tr>
-              <td><span class="shopping-check-box"></span> <strong>${item}</strong></td>
-              <td style="width: 140px; text-align: center; color: #334155; font-weight: 600;">${textoDias}</td>
-            </tr>
-          `;
-        }).join("");
+        if (plan.saladId) {
+          const salada = saladas.find(s => s.id === plan.saladId);
+          if (salada) pratos[salada.nome] = salada;
+        }
+      });
+
+      const byCategory = {
+        legumes: [],
+        proteinas: [],
+        carboidratos: []
+      };
+
+      Object.values(pratos).forEach(p => {
+        (p.legumes || []).forEach(leg => {
+          if (!byCategory.legumes.includes(leg)) byCategory.legumes.push(leg);
+        });
+        if (p.proteina && p.proteina !== "N/A") {
+          if (!byCategory.proteinas.includes(p.proteina)) byCategory.proteinas.push(p.proteina);
+        }
+        if (p.carboidrato && p.carboidrato !== "N/A") {
+          if (!byCategory.carboidratos.includes(p.carboidrato)) byCategory.carboidratos.push(p.carboidrato);
+        }
+      });
+
+      let html = '<div class="shopping-print-title">🛒 Lista de Compras</div>';
+
+      if (byCategory.legumes.length > 0) {
+        html += `
+          <div class="shopping-category-block">
+            <div class="shopping-cat-title cat-title-veg">🥦 Legumes & Vegetais</div>
+            <table class="shopping-table">
+              <thead><tr><th></th><th>Item</th><th>Qtd</th></tr></thead>
+              <tbody>
+                ${byCategory.legumes.map(leg => `<tr><td><span class="shopping-check-box"></span></td><td>${leg}</td><td></td></tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
       }
 
-      const container = document.getElementById("printShoppingContainer");
-      container.innerHTML = `
-        <div class="shopping-print-title">🛒 Lista de Compras da Semana (Jantares)</div>
-        <p style="font-size: 8.5pt; color: #64748b; margin-bottom: 14px;">
-          Ingredientes agregados dos 5 dias úteis com o total de dias de utilização em receitas.
-        </p>
+      if (byCategory.proteinas.length > 0) {
+        html += `
+          <div class="shopping-category-block">
+            <div class="shopping-cat-title cat-title-prot">🥩 Proteínas</div>
+            <table class="shopping-table">
+              <thead><tr><th></th><th>Item</th><th>Qtd</th></tr></thead>
+              <tbody>
+                ${byCategory.proteinas.map(prot => `<tr><td><span class="shopping-check-box"></span></td><td>${prot}</td><td></td></tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
 
-        <div class="shopping-category-block">
-          <div class="shopping-cat-title cat-title-veg">🥦 Legumes & Vegetais</div>
-          <table class="shopping-table">
-            <thead>
-              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
-            </thead>
-            <tbody>
-              ${gerarLinhasTabela(contagemLegumes)}
-            </tbody>
-          </table>
-        </div>
+      if (byCategory.carboidratos.length > 0) {
+        html += `
+          <div class="shopping-category-block">
+            <div class="shopping-cat-title cat-title-carb">🍚 Carboidratos</div>
+            <table class="shopping-table">
+              <thead><tr><th></th><th>Item</th><th>Qtd</th></tr></thead>
+              <tbody>
+                ${byCategory.carboidratos.map(carb => `<tr><td><span class="shopping-check-box"></span></td><td>${carb}</td><td></td></tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
 
-        <div class="shopping-category-block">
-          <div class="shopping-cat-title cat-title-prot">🥩 Proteínas</div>
-          <table class="shopping-table">
-            <thead>
-              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
-            </thead>
-            <tbody>
-              ${gerarLinhasTabela(contagemProteinas)}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="shopping-category-block">
-          <div class="shopping-cat-title cat-title-carb">🍚 Carboidratos & Acompanhamentos</div>
-          <table class="shopping-table">
-            <thead>
-              <tr><th>Item / Ingrediente</th><th style="text-align:center;">Frequência Semanal</th></tr>
-            </thead>
-            <tbody>
-              ${gerarLinhasTabela(contagemCarboidratos)}
-            </tbody>
-          </table>
-        </div>
-      `;
-
-      document.body.className = "printing-shopping";
-      window.print();
+      document.getElementById("printShoppingContainer").innerHTML = html;
+      document.body.classList.add("printing-shopping");
+      setTimeout(() => { window.print(); document.body.classList.remove("printing-shopping"); }, 300);
     }
 
-    // Inicialização ao carregar
-    carregarCsvAutomatico();
+    function executarImpressaoCardapio() {
+      document.body.classList.add("printing-menu");
+      setTimeout(() => { window.print(); document.body.classList.remove("printing-menu"); }, 300);
+    }
+
+    // Carrega CSV ao iniciar
+    window.addEventListener("DOMContentLoaded", carregarCsvAutomatico);
   </script>
 </body>
 </html>
