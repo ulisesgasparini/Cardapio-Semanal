@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesa · Painel de Gestão & Edição (cardapio.db)</title>
+  <!-- SQLite WebAssembly Nativo (sql.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  <style>
+    :root {
+      --system-bg: #f5f5f7;
+      --card-bg: #ffffff;
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --danger: #ff3b30;
+      --danger-hover: #e02d23;
+      --success: #34c759;
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-hover: rgba(0, 0, 0, 0.16);
+      --surface-subtle: #fbfbfd;
+      --surface-active: #f0f0f2;
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      background: var(--system-bg);
+      color: var(--text-primary);
+      line-height: 1.47059;
+      letter-spacing: -0.022em;
+      padding: 32px 16px 80px;
+      max-width: 960px;
+      margin: 0 auto;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .brand-eyebrow {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 580px;
+      margin: 0 auto 16px;
+    }
+
+    /* Top Action Bar (Upload & Export) */
+    .top-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--card-bg);
+      padding: 14px 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    .db-status {
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      display: inline-block;
+    }
+    .action-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-full);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: scale(1.02);
+    }
+    .btn-dark {
+      background: #1d1d1f;
+      color: #ffffff;
+    }
+    .btn-dark:hover {
+      background: #000000;
+      transform: scale(1.02);
+    }
+    .btn-secondary {
+      background: #e8e8ed;
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover {
+      background: #d8d8dd;
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 0.8rem;
+    }
+
+    /* Segmented Control Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 4px;
+      background: #e5e5ea;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 28px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 16px;
+      border: none;
+      background: transparent;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      text-align: center;
+      font-family: inherit;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Form Container */
+    .form-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+    .form-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 680px) {
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      font-size: 0.92rem;
+      outline: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    /* Tables */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      overflow-x: auto;
+      margin-bottom: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface-subtle);
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(0, 0, 0, 0.015); }
+
+    .tag-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--surface-active);
+      color: var(--text-primary);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+    .type-pill-prato {
+      background: #eff6ff;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+    }
+    .type-pill-salada {
+      background: #eef7ee;
+      color: #166534;
+      font-weight: 600;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Modal / Toast */
+    .toast-notify {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1d1d1f;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-full);
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: none;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-eyebrow">Gestão de Dados</div>
+    <h1>Editor do Cardápio</h1>
+    <p>Adicione receitas, ajuste ingredientes, proteínas, carboidratos e exporte o arquivo <strong>cardapio.db</strong> atualizado.</p>
+  </header>
+
+  <!-- Top Action Bar -->
+  <div class="top-actions-bar">
+    <div class="db-status">
+      <span class="status-dot"></span>
+      <span id="txtDbStatus">Banco de Dados Carregado</span>
+    </div>
+    <div class="action-group">
+      <label class="btn btn-secondary" style="cursor: pointer;">
+        📂 Carregar .db existente
+        <input type="file" id="fileDbInput" accept=".db,.sqlite,.sqlite3" style="display: none;" onchange="importarArquivoDB(event)">
+      </label>
+      <button class="btn btn-dark" onclick="exportarEBaixarDB()">
+        ⬇ Baixar cardapio.db Atualizado
+      </button>
+      <a href="index.html" class="btn btn-primary" target="_blank">
+        ▶ Abrir Cardápio
+      </a>
+    </div>
+  </div>
+
+  <!-- Segmented Control Tabs -->
+  <nav class="tabs-nav">
+    <button id="tabBtnReceitas" class="tab-btn active" onclick="trocarAba('abaReceitas')">Receitas (Pratos & Saladas)</button>
+    <button id="tabBtnBases" class="tab-btn" onclick="trocarAba('abaBases')">Bases & Ingredientes</button>
+  </nav>
+
+  <!-- ==========================================
+       TAB 1: RECEITAS (Pratos & Saladas)
+       ========================================== -->
+  <section id="abaReceitas" class="tab-content active">
+    <!-- Form Nova / Editar Receita -->
+    <div class="form-card">
+      <div class="form-title">
+        <span id="formReceitaTitle">Cadastrar Nova Receita</span>
+        <button id="btnCancelarEdicao" class="btn btn-secondary btn-sm" style="display:none;" onclick="cancelarEdicaoReceita()">Cancelar Edição</button>
+      </div>
+      <form id="formReceita" onsubmit="salvarReceita(event)">
+        <input type="hidden" id="editReceitaId" value="">
+        
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="recTipo">Tipo de Receita *</label>
+            <select id="recTipo" required>
+              <option value="pratos">Prato Principal</option>
+              <option value="saladas">Salada / Acompanhamento</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label for="recNome">Nome da Receita *</label>
+            <input type="text" id="recNome" placeholder="Ex: Risoto de Frango com Alho-Poró" required>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="recTempo">Tempo de Preparo</label>
+            <input type="text" id="recTempo" placeholder="Ex: 25 min ou 20'">
+          </div>
+          <div class="form-group">
+            <label for="recCalorias">Calorias (kcal)</label>
+            <input type="number" id="recCalorias" placeholder="Ex: 450" min="0">
+          </div>
+          <div class="form-group">
+            <label for="recProteina">Proteína(s)</label>
+            <input type="text" id="recProteina" placeholder="Ex: Frango, Ovo, Carne Bovina">
+            <div class="form-hint">Separe por vírgula se houver mais de uma.</div>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="recCarboidrato">Carboidrato / Base</label>
+            <input type="text" id="recCarboidrato" placeholder="Ex: Arroz, Batata, Tortilla">
+          </div>
+          <div class="form-group">
+            <label for="recLegumes">Legumes / Vegetais</label>
+            <input type="text" id="recLegumes" placeholder="Ex: Brócolis, Cenoura, Tomate">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="recRequisitos">Requisitos Prévios (Base 1 porção)</label>
+          <input type="text" id="recRequisitos" placeholder="Ex: Peito de frango descongelado (150g por pessoa); Cenoura ralada (50g por pessoa)">
+          <div class="form-hint">Valores com quantidades (ex: 150g) serão multiplicados automaticamente pelo número de pessoas na semana.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="recPreparo">Modo de Preparo</label>
+          <textarea id="recPreparo" placeholder="Passo a passo da receita. Para incluir uma dica destacada, inicie a frase com 'Dica:'"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="submit" class="btn btn-primary" id="btnSalvarReceita">Salvar Receita no Banco</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabela de Receitas Cadastradas -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Nome</th>
+            <th>Tempo</th>
+            <th>Calorias</th>
+            <th>Proteína / Carbo</th>
+            <th style="text-align:right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyReceitas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       TAB 2: BASES & INGREDIENTES (de_base_para_ingredientes)
+       ========================================== -->
+  <section id="abaBases" class="tab-content">
+    <!-- Form Nova Relação Base -> Ingrediente -->
+    <div class="form-card">
+      <div class="form-title">
+        <span id="formBaseTitle">Cadastrar / Editar Relação de Ingrediente</span>
+        <button id="btnCancelarEdicaoBase" class="btn btn-secondary btn-sm" style="display:none;" onclick="cancelarEdicaoBase()">Cancelar Edição</button>
+      </div>
+      <form id="formBaseIngrediente" onsubmit="salvarBaseIngrediente(event)">
+        <input type="hidden" id="editBaseId" value="">
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="baseNome">Base (Nome no Prato/Salada) *</label>
+            <input type="text" id="baseNome" placeholder="Ex: Frango, Cenoura ralada, Arroz" required>
+            <div class="form-hint">Exatamente como consta na receita.</div>
+          </div>
+          <div class="form-group">
+            <label for="baseIngrediente">Ingrediente para o Mercado *</label>
+            <input type="text" id="baseIngrediente" placeholder="Ex: Peito de Frango Orgânico" required>
+            <div class="form-hint">Nome que aparecerá na Lista de Compras.</div>
+          </div>
+          <div class="form-group">
+            <label for="baseUnidades">Quantidade por Porção *</label>
+            <input type="text" id="baseUnidades" placeholder="Ex: 150g, 1 un, 50ml" required>
+            <div class="form-hint">Gramatura ou unidade por 1 pessoa.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="submit" class="btn btn-primary" id="btnSalvarBase">Salvar Relação no Banco</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabela de Conversão de Bases Cadastradas -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Base Cadastrada</th>
+            <th>Ingrediente de Compra</th>
+            <th>Qtd. por Porção</th>
+            <th style="text-align:right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyBases"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="toast" class="toast-notify"></div>
+
+  <!-- Script SQL Inicial Embutido -->
+  <script id="sqlInitialData" type="text/plain">
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS de_base_para_ingredientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bases TEXT NOT NULL,
+    ingredientes TEXT NOT NULL,
+    unidades TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pratos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_do_prato TEXT NOT NULL,
+    tempo_de_preparo TEXT,
+    receita TEXT,
+    legumes TEXT,
+    proteinas TEXT,
+    carboidratos TEXT,
+    requisitos TEXT,
+    calorias INTEGER
+);
+CREATE TABLE IF NOT EXISTS saladas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_da_salada TEXT NOT NULL,
+    tempo TEXT,
+    modo_de_preparo TEXT,
+    legumes TEXT,
+    proteinas TEXT,
+    carboidratos TEXT,
+    requisitos TEXT,
+    calorias INTEGER
+);
+COMMIT;
+  </script>
+
+  <script>
+    let db = null;
+    let SQL = null;
+
+    // Inicialização do SQLite no Navegador
+    async function initDB() {
+      try {
+        const initSqlJs = window.initSqlJs;
+        SQL = await initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+        });
+
+        // Tenta carregar cardapio.db local se existir
+        try {
+          const resp = await fetch("cardapio.db", { cache: "no-cache" });
+          if (resp.ok) {
+            const buf = await resp.arrayBuffer();
+            db = new SQL.Database(new Uint8Array(buf));
+            mostrarToast("cardapio.db carregado com sucesso!");
+          }
+        } catch (e) {}
+
+        if (!db) {
+          db = new SQL.Database();
+          const sqlInit = document.getElementById("sqlInitialData").textContent;
+          db.run(sqlInit);
+        }
+
+        renderizarTudo();
+      } catch (err) {
+        console.error("Erro ao inicializar:", err);
+      }
+    }
+
+    function renderizarTudo() {
+      renderizarTabelaReceitas();
+      renderizarTabelaBases();
+    }
+
+    // ==========================================
+    // RECEITAS (Pratos e Saladas)
+    // ==========================================
+    function renderizarTabelaReceitas() {
+      const tbody = document.getElementById("tbodyReceitas");
+      tbody.innerHTML = "";
+
+      // 1. Pratos
+      const pratosRes = db.exec("SELECT id, nome_do_prato, tempo_de_preparo, receita, legumes, proteinas, carboidratos, requisitos, calorias FROM pratos ORDER BY nome_do_prato ASC");
+      if (pratosRes.length > 0) {
+        const rows = pratosRes[0].values;
+        rows.forEach(r => {
+          const [id, nome, tempo, receita, legumes, proteinas, carbos, requisitos, calorias] = r;
+          tbody.innerHTML += `
+            <tr>
+              <td><span class="type-pill-prato">Principal</span></td>
+              <td><strong>${nome}</strong></td>
+              <td>${tempo || '-'}</td>
+              <td>${calorias ? calorias + ' kcal' : '-'}</td>
+              <td>
+                ${proteinas ? `<span class="tag-badge">${proteinas}</span>` : ''}
+                ${carbos ? `<span class="tag-badge">${carbos}</span>` : ''}
+              </td>
+              <td style="text-align:right;">
+                <button class="btn btn-secondary btn-sm" onclick="iniciarEdicaoReceita('pratos', ${id})">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirReceita('pratos', ${id}, '${nome}')">Excluir</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      // 2. Saladas
+      const saladasRes = db.exec("SELECT id, nome_da_salada, tempo, modo_de_preparo, legumes, proteinas, carboidratos, requisitos, calorias FROM saladas ORDER BY nome_da_salada ASC");
+      if (saladasRes.length > 0) {
+        const rows = saladasRes[0].values;
+        rows.forEach(r => {
+          const [id, nome, tempo, preparo, legumes, proteinas, carbos, requisitos, calorias] = r;
+          tbody.innerHTML += `
+            <tr>
+              <td><span class="type-pill-salada">Salada</span></td>
+              <td><strong>${nome}</strong></td>
+              <td>${tempo || '-'}</td>
+              <td>${calorias ? calorias + ' kcal' : '-'}</td>
+              <td>
+                ${proteinas ? `<span class="tag-badge">${proteinas}</span>` : ''}
+                ${carbos ? `<span class="tag-badge">${carbos}</span>` : ''}
+              </td>
+              <td style="text-align:right;">
+                <button class="btn btn-secondary btn-sm" onclick="iniciarEdicaoReceita('saladas', ${id})">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirReceita('saladas', ${id}, '${nome}')">Excluir</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    function salvarReceita(e) {
+      e.preventDefault();
+      const tipo = document.getElementById("recTipo").value;
+      const id = document.getElementById("editReceitaId").value;
+      const nome = document.getElementById("recNome").value.trim();
+      const tempo = document.getElementById("recTempo").value.trim();
+      const calorias = parseInt(document.getElementById("recCalorias").value, 10) || 0;
+      const proteina = document.getElementById("recProteina").value.trim();
+      const carbo = document.getElementById("recCarboidrato").value.trim();
+      const legumes = document.getElementById("recLegumes").value.trim();
+      const requisitos = document.getElementById("recRequisitos").value.trim();
+      const preparo = document.getElementById("recPreparo").value.trim();
+
+      if (id) {
+        // UPDATE
+        if (tipo === "pratos") {
+          db.run("UPDATE pratos SET nome_do_prato=?, tempo_de_preparo=?, receita=?, legumes=?, proteinas=?, carboidratos=?, requisitos=?, calorias=? WHERE id=?",
+            [nome, tempo, preparo, legumes, proteina, carbo, requisitos, calorias, id]);
+        } else {
+          db.run("UPDATE saladas SET nome_da_salada=?, tempo=?, modo_de_preparo=?, legumes=?, proteinas=?, carboidratos=?, requisitos=?, calorias=? WHERE id=?",
+            [nome, tempo, preparo, legumes, proteina, carbo, requisitos, calorias, id]);
+        }
+        mostrarToast("Receita atualizada com sucesso!");
+      } else {
+        // INSERT
+        if (tipo === "pratos") {
+          db.run("INSERT INTO pratos (nome_do_prato, tempo_de_preparo, receita, legumes, proteinas, carboidratos, requisitos, calorias) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [nome, tempo, preparo, legumes, proteina, carbo, requisitos, calorias]);
+        } else {
+          db.run("INSERT INTO saladas (nome_da_salada, tempo, modo_de_preparo, legumes, proteinas, carboidratos, requisitos, calorias) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [nome, tempo, preparo, legumes, proteina, carbo, requisitos, calorias]);
+        }
+        mostrarToast("Nova receita cadastrada no banco!");
+      }
+
+      cancelarEdicaoReceita();
+      renderizarTabelaReceitas();
+    }
+
+    function iniciarEdicaoReceita(tipo, id) {
+      const tabela = tipo === "pratos" ? "pratos" : "saladas";
+      const colNome = tipo === "pratos" ? "nome_do_prato" : "nome_da_salada";
+      const colTempo = tipo === "pratos" ? "tempo_de_preparo" : "tempo";
+      const colPrep = tipo === "pratos" ? "receita" : "modo_de_preparo";
+
+      const res = db.exec(`SELECT ${colNome}, ${colTempo}, ${colPrep}, legumes, proteinas, carboidratos, requisitos, calorias FROM ${tabela} WHERE id=${id}`);
+      if (res.length > 0 && res[0].values.length > 0) {
+        const [nome, tempo, preparo, legumes, proteinas, carbos, requisitos, calorias] = res[0].values[0];
+        document.getElementById("recTipo").value = tipo;
+        document.getElementById("recTipo").disabled = true;
+        document.getElementById("editReceitaId").value = id;
+        document.getElementById("recNome").value = nome || "";
+        document.getElementById("recTempo").value = tempo || "";
+        document.getElementById("recCalorias").value = calorias || "";
+        document.getElementById("recProteina").value = proteinas || "";
+        document.getElementById("recCarboidrato").value = carbos || "";
+        document.getElementById("recLegumes").value = legumes || "";
+        document.getElementById("recRequisitos").value = requisitos || "";
+        document.getElementById("recPreparo").value = preparo || "";
+
+        document.getElementById("formReceitaTitle").textContent = `Editando: ${nome}`;
+        document.getElementById("btnSalvarReceita").textContent = "Atualizar Receita";
+        document.getElementById("btnCancelarEdicao").style.display = "inline-flex";
+
+        window.scrollTo({ top: 180, behavior: 'smooth' });
+      }
+    }
+
+    function cancelarEdicaoReceita() {
+      document.getElementById("formReceita").reset();
+      document.getElementById("editReceitaId").value = "";
+      document.getElementById("recTipo").disabled = false;
+      document.getElementById("formReceitaTitle").textContent = "Cadastrar Nova Receita";
+      document.getElementById("btnSalvarReceita").textContent = "Salvar Receita no Banco";
+      document.getElementById("btnCancelarEdicao").style.display = "none";
+    }
+
+    function excluirReceita(tipo, id, nome) {
+      if (confirm(`Tem certeza que deseja excluir "${nome}" do banco de dados?`)) {
+        db.run(`DELETE FROM ${tipo} WHERE id=?`, [id]);
+        mostrarToast(`"${nome}" foi excluído.`);
+        renderizarTabelaReceitas();
+      }
+    }
+
+    // ==========================================
+    // BASES & INGREDIENTES (de_base_para_ingredientes)
+    // ==========================================
+    function renderizarTabelaBases() {
+      const tbody = document.getElementById("tbodyBases");
+      tbody.innerHTML = "";
+
+      const res = db.exec("SELECT id, bases, ingredientes, unidades FROM de_base_para_ingredientes ORDER BY bases ASC");
+      if (res.length > 0) {
+        const rows = res[0].values;
+        rows.forEach(r => {
+          const [id, base, ingrediente, unidades] = r;
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>${base}</strong></td>
+              <td>${ingrediente}</td>
+              <td><span class="tag-badge">${unidades}</span></td>
+              <td style="text-align:right;">
+                <button class="btn btn-secondary btn-sm" onclick="iniciarEdicaoBase(${id})">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirBase(${id}, '${base}')">Excluir</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    function salvarBaseIngrediente(e) {
+      e.preventDefault();
+      const id = document.getElementById("editBaseId").value;
+      const base = document.getElementById("baseNome").value.trim();
+      const ingrediente = document.getElementById("baseIngrediente").value.trim();
+      const unidades = document.getElementById("baseUnidades").value.trim();
+
+      if (id) {
+        db.run("UPDATE de_base_para_ingredientes SET bases=?, ingredientes=?, unidades=? WHERE id=?",
+          [base, ingrediente, unidades, id]);
+        mostrarToast("Relação de ingrediente atualizada!");
+      } else {
+        db.run("INSERT INTO de_base_para_ingredientes (bases, ingredientes, unidades) VALUES (?, ?, ?)",
+          [base, ingrediente, unidades]);
+        mostrarToast("Nova relação cadastrada com sucesso!");
+      }
+
+      cancelarEdicaoBase();
+      renderizarTabelaBases();
+    }
+
+    function iniciarEdicaoBase(id) {
+      const res = db.exec(`SELECT bases, ingredientes, unidades FROM de_base_para_ingredientes WHERE id=${id}`);
+      if (res.length > 0 && res[0].values.length > 0) {
+        const [base, ingrediente, unidades] = res[0].values[0];
+        document.getElementById("editBaseId").value = id;
+        document.getElementById("baseNome").value = base || "";
+        document.getElementById("baseIngrediente").value = ingrediente || "";
+        document.getElementById("baseUnidades").value = unidades || "";
+
+        document.getElementById("formBaseTitle").textContent = `Editando: ${base} ➔ ${ingrediente}`;
+        document.getElementById("btnSalvarBase").textContent = "Atualizar Relação";
+        document.getElementById("btnCancelarEdicaoBase").style.display = "inline-flex";
+
+        window.scrollTo({ top: 180, behavior: 'smooth' });
+      }
+    }
+
+    function cancelarEdicaoBase() {
+      document.getElementById("formBaseIngrediente").reset();
+      document.getElementById("editBaseId").value = "";
+      document.getElementById("formBaseTitle").textContent = "Cadastrar / Editar Relação de Ingrediente";
+      document.getElementById("btnSalvarBase").textContent = "Salvar Relação no Banco";
+      document.getElementById("btnCancelarEdicaoBase").style.display = "none";
+    }
+
+    function excluirBase(id, base) {
+      if (confirm(`Tem certeza que deseja excluir a relação para "${base}"?`)) {
+        db.run("DELETE FROM de_base_para_ingredientes WHERE id=?", [id]);
+        mostrarToast("Relação excluída.");
+        renderizarTabelaBases();
+      }
+    }
+
+    // ==========================================
+    // IMPORTAÇÃO E EXPORTAÇÃO DO .DB
+    // ==========================================
+    function exportarEBaixarDB() {
+      if (!db) return;
+      const data = db.export();
+      const blob = new Blob([data], { type: "application/x-sqlite3" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cardapio.db";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      mostrarToast("✔ Arquivo cardapio.db exportado com sucesso!");
+    }
+
+    function importarArquivoDB(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function() {
+        const uInt8Array = new Uint8Array(this.result);
+        db = new SQL.Database(uInt8Array);
+        renderizarTudo();
+        mostrarToast(`✔ Banco "${file.name}" carregado com sucesso!`);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function trocarAba(abaId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      
+      const targetSection = document.getElementById(abaId);
+      if (targetSection) targetSection.classList.add("active");
+      
+      if (abaId === 'abaReceitas') {
+        document.getElementById('tabBtnReceitas').classList.add("active");
+      } else {
+        document.getElementById('tabBtnBases').classList.add("active");
+      }
+    }
+
+    function mostrarToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 3500);
+    }
+
+    // Inicialização
+    initDB();
+  </script>
+</body>
+</html>
