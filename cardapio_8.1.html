@@ -66,27 +66,34 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Header & Logo */
+    /* Header & Logo (Sem bordas, sem fundo e com +50% de tamanho: 210px) */
     header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 28px;
     }
     .logo-container {
       display: inline-block;
-      margin-bottom: 12px;
-      transition: transform 0.2s ease;
+      margin-bottom: 16px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      transition: transform 0.25s ease;
     }
     .logo-container:hover {
-      transform: scale(1.02);
+      transform: scale(1.03);
     }
     .brand-logo {
-      width: 140px;
-      height: 140px;
+      width: 210px;
+      height: 210px;
       object-fit: contain;
-      border-radius: 50%;
-      box-shadow: var(--shadow-md);
-      background: #ffffff;
-      padding: 2px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+      display: block;
+      margin: 0 auto;
     }
     .brand-eyebrow {
       font-size: 0.78rem;
@@ -782,11 +789,11 @@
 
   <header>
     <div class="logo-container">
-      <img src="logo.jpg" alt="Logo Cucina dei Gasparini" class="brand-logo" onerror="this.onerror=null; this.src='logo.png';">
+      <img src="logo.png" alt="Logo Cucina dei Gasparini" class="brand-logo" onerror="this.onerror=null; this.src='logo_transparente.png';">
     </div>
-    <div class="brand-eyebrow">Trattoria · Cantina Familiar</div>
+    <div class="brand-eyebrow">Trattoria Velocissima</div>
     <h1>Cucina dei Gasparini</h1>
-    <p>Cardápio semanal, inspirações gastronômicas e lista inteligente de compras.</p>
+    <p>una soluzione artificiale a un problema naturale.</p>
   </header>
 
   <!-- Segmented Control Tabs -->
